@@ -187,27 +187,24 @@ In this PowerShell environment, invoking `npm` was blocked by the script executi
 
 - **GitHub username:** `paidisunhithreddy8-arch`
 - **Profile:** <https://github.com/paidisunhithreddy8-arch>
-- **Planned repository name:** `paidisunhithreddy8-arch`
-- **Repository URL:** Not created or verified yet.
+- **Repository:** [LAB-1](https://github.com/paidisunhithreddy8-arch/LAB-1) (public)
+- **Lab 1 folder:** [lab-01](https://github.com/paidisunhithreddy8-arch/LAB-1/tree/main/lab-01)
+- **Branch:** `main`
+- **Submitted commit:** `3e67f551f88ec37b61b3d16dfac3b0187829006e`
 
-Before uploading, create or select the intended repository and verify its URL, current branch, and remote. Do not overwrite an existing remote. Add this project as `lab-01/` if using a course repository, or put the project files at the root of a new standalone repository. Then, from the repository root, review the changes before committing:
+The project has been pushed to the verified public repository. To review future changes and publish updates from the repository root, use:
 
 ```powershell
 git status
-git branch --show-current
-git remote -v
 git add lab-01/
-git commit -m "Complete Lab 1 Node.js and Express server"
-git push -u origin main
+git commit -m "Update Backend Development Fundamentals Lab 1"
+git push origin main
 ```
-
-If the standalone project files are at the repository root rather than inside `lab-01/`, use `git add .` instead. Adjust the push branch to the verified current branch. No GitHub repository has been created or pushed from this project yet.
-
 ## Deployment instructions
 
 The application is prepared for a Render web service, but it has not been deployed. Do not replace the deployment status at the top until the public URL exists and the endpoints have been checked.
 
-1. Push the verified project to the intended GitHub repository.
+1. Connect the verified GitHub repository to Render.
 2. In Render, create a new **Web Service** and connect that repository.
 3. If this is a course monorepo with the project under `lab-01/`, set **Root Directory** to `lab-01`. If the project files are at the repository root, leave **Root Directory** blank.
 4. Set **Build Command** to `npm install` and **Start Command** to `npm start`.
@@ -241,9 +238,9 @@ The application is prepared for a Render web service, but it has not been deploy
 - [x] Student information included.
 - [x] README and all five genuine screenshots included.
 - [x] `.gitignore` configured; `node_modules/` is excluded.
-- [ ] GitHub repository created or selected and verified.
-- [ ] Project committed and pushed to the verified repository.
-- [ ] Repository access configured for the faculty.
+- [x] GitHub repository created and verified.
+- [x] Project committed and pushed to the verified repository.
+- [x] Repository is public and accessible.
 - [ ] Render deployment completed and all routes verified.
 - [ ] Verified deployment URL added at the top of this README.
 - [ ] GitHub form submitted: <https://docs.google.com/forms/d/e/1FAIpQLSd4eOVMM_PQQs2I9AWT9PCUF1o9l3G3wypCbeKJOHx87z0fnQ/viewform>
