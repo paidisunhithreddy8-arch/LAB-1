@@ -23,7 +23,7 @@ All four endpoints were manually tested successfully:
 | Course | Backend Development Fundamentals |
 | Academic year | II |
 | Branch | CSE |
-| Faculty | Shiva Teja |
+| Faculty | Siva  sai Teja |
 | GitHub username | [paidisunhithreddy8-arch](https://github.com/paidisunhithreddy8-arch) |
 
 ## Objective
