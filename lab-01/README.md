@@ -1,6 +1,15 @@
-﻿# Lab 1 — Node.js and Express Server
+# Lab 1 — Node.js and Express Server
 
-**Deployment URL: Not Deployed Yet**
+## Deployment
+
+**Deployment URL:** [https://lab-01-uo69.vercel.app](https://lab-01-uo69.vercel.app)
+
+All four endpoints were manually tested successfully:
+
+- [Home endpoint](https://lab-01-uo69.vercel.app/)
+- [About endpoint](https://lab-01-uo69.vercel.app/about)
+- [Time endpoint](https://lab-01-uo69.vercel.app/time)
+- [Unknown route (expected 404)](https://lab-01-uo69.vercel.app/unknown)
 
 ## Student information
 
@@ -200,18 +209,9 @@ git add lab-01/
 git commit -m "Update Backend Development Fundamentals Lab 1"
 git push origin main
 ```
-## Deployment instructions
+## Vercel deployment
 
-The application is prepared for a Render web service, but it has not been deployed. Do not replace the deployment status at the top until the public URL exists and the endpoints have been checked.
-
-1. Connect the verified GitHub repository to Render.
-2. In Render, create a new **Web Service** and connect that repository.
-3. If this is a course monorepo with the project under `lab-01/`, set **Root Directory** to `lab-01`. If the project files are at the repository root, leave **Root Directory** blank.
-4. Set **Build Command** to `npm install` and **Start Command** to `npm start`.
-5. Deploy. Render supplies the port through `process.env.PORT`, which the Express app uses.
-6. Open the public service URL and verify `/`, `/about`, `/time`, and an unknown route. Confirm the expected response and status for each.
-7. After successful verification, replace **Not Deployed Yet** at the top with the actual public URL.
-
+This project is deployed at [https://lab-01-uo69.vercel.app](https://lab-01-uo69.vercel.app). The Vercel project Root Directory is `lab-01`, where this project's `package.json` is located. The four deployed endpoints listed above were manually tested successfully.
 ## Viva questions and answers
 
 1. **What is Node.js?** A runtime that lets JavaScript run outside a browser, including on a server.
@@ -241,8 +241,8 @@ The application is prepared for a Render web service, but it has not been deploy
 - [x] GitHub repository created and verified.
 - [x] Project committed and pushed to the verified repository.
 - [x] Repository is public and accessible.
-- [ ] Render deployment completed and all routes verified.
-- [ ] Verified deployment URL added at the top of this README.
+- [x] Vercel deployment completed and all four endpoints manually verified.
+- [x] Verified Vercel deployment URL added near the top of this README.
 - [ ] GitHub form submitted: <https://docs.google.com/forms/d/e/1FAIpQLSd4eOVMM_PQQs2I9AWT9PCUF1o9l3G3wypCbeKJOHx87z0fnQ/viewform>
 - [ ] Repository link added to the lab report.
 - [ ] Lab report submitted through ERP.
