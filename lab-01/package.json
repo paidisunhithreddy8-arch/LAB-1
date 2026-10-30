@@ -1,0 +1,16 @@
+﻿{
+  "name": "paidisunhithreddy8-arch",
+  "version": "1.0.0",
+  "description": "Lab 1: Node.js and Express server for Backend Development Fundamentals",
+  "main": "server.js",
+  "author": "Paidi Sunhith Reddy",
+  "license": "ISC",
+  "scripts": {
+    "start": "node server.js",
+    "start:http": "node http-server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
