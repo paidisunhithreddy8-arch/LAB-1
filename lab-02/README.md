@@ -37,7 +37,7 @@ lab-02/
     └── books.test.js
 ```
 
-`node_modules/` is created locally by npm and ignored by Git. `.env` is ignored as well; copy `.env.example` to `.env` only if you want local environment overrides. The committed `books.db` is the starter database, while the Render service must set `DB_PATH=/var/data/books.db` so changes survive restarts and redeployments.
+`node_modules/` is created locally by npm and ignored by Git. `.env` is ignored too. `.env.example` lists the available settings, but this app reads variables directly from the shell or hosting platform; it does not auto-load a `.env` file. The committed `books.db` is the starter database, while the Render service must set `DB_PATH=/var/data/books.db` so changes survive restarts and redeployments.
 
 ## Requirements and installation
 
@@ -128,7 +128,7 @@ During setup, the Windows shared npm cache blocked a native `sqlite3` prebuilt d
 
 ## Deployment with persistent SQLite data
 
-The Render blueprint in `render.yaml` points the service root at `lab-02` and mounts a persistent disk at `/var/data`; it configures SQLite to write to `/var/data/books.db`. Render currently requires a paid web-service plan for persistent disks. Create the service from the blueprint, select a plan that supports the disk, wait for a successful deploy, and test the public endpoint URLs. A disk-backed SQLite file persists across service restarts; without the disk, filesystem changes may be lost. Add the real public base URL here only after deployment and live endpoint checks succeed.
+The Render blueprint in `render.yaml` points the service root at `lab-02` and mounts a persistent disk at `/var/data`; it configures SQLite to write to `/var/data/books.db`. When importing the Blueprint, select `lab-02/render.yaml` as the Blueprint file. Render currently requires a paid web-service plan for persistent disks. Create the service from the blueprint, select a plan that supports the disk, wait for a successful deploy, and test the public endpoint URLs. A disk-backed SQLite file persists across service restarts; without the disk, filesystem changes may be lost. Add the real public base URL here only after deployment and live endpoint checks succeed.
 
 ## Submission checklist
 
