@@ -117,49 +117,21 @@ Tests use `pg-mem`, an in-memory PostgreSQL-compatible test database. They exerc
 
 The importable collection is [`Postman-Lab-2-Collection.json`](Postman-Lab-2-Collection.json). It contains the five CRUD requests in order and saves the returned POST ID as `bookId` for PUT and DELETE. For local testing, set the collection's request URLs to `http://localhost:3001` and use Postman's Desktop Agent (a cloud agent cannot reach your computer's localhost). For deployed testing, change the base URL to the actual Render service URL after deployment.
 
-### Capture genuine screenshots
+## Live Postman verification evidence
 
-Capture each screenshot only after its real request and response are visible. Keep the request method, URL, response status, response body, and Postman test result in view. Use Windows Snipping Tool (`Win+Shift+S`) or another real screen capture tool and save unaltered captures in `lab-02/screenshots/`.
+The deployed API was tested using Postman at `https://lab-02-5ug9.onrender.com`. The screenshots shared during this verification show the live API responses:
 
-The screenshots currently in the repository were captured from the original SQLite implementation and are historical evidence. The migrated PostgreSQL API has since been tested live on Render using Postman. Replace these historical images with the new live Postman captures before final submission. For database evidence, use the Neon SQL Editor to run `SELECT id, title, author, price, pages FROM book ORDER BY id;` and capture the actual results.
+| Method | Live request | Result |
+| --- | --- | --- |
+| GET | `/books/` | 200 OK — returned the seeded books |
+| GET | `/books/1/` | 200 OK — returned The Alchemist |
+| POST | `/books/` | 201 Created — created **Postman Live Test** as book ID **11** |
+| PUT | `/books/11/` | 200 OK — updated the title to **Updated Live Test** and pages to **250** |
+| DELETE | `/books/11/` | 200 OK — returned `{"message":"Book deleted successfully"}` |
 
-## Screenshots / Evidence
+The Render deployment page showed **Deploy succeeded / Live**, and the service logs confirmed that it connected to the PostgreSQL database using `DATABASE_URL`. The POST, PUT, and DELETE sequence was completed against the deployed API.
 
-### GET All Books
-
-Existing capture (from the original SQLite implementation; replace with a genuine capture of the migrated API before submission).
-
-![GET All Books response](screenshots/get-all-books.png)
-
-### GET Book by ID
-
-Existing capture (from the original SQLite implementation; replace with a genuine capture of the migrated API before submission).
-
-![GET Book by ID response](screenshots/get-one-book.png)
-
-### POST Create Book
-
-Existing capture (from the original SQLite implementation; replace with a genuine capture of the migrated API before submission).
-
-![POST Create Book response](screenshots/post-book.png)
-
-### PUT Update Book
-
-Existing capture (from the original SQLite implementation; replace with a genuine capture of the migrated API before submission).
-
-![PUT Update Book response](screenshots/put-book.png)
-
-### DELETE Book
-
-Existing capture (from the original SQLite implementation; replace with a genuine capture of the migrated API before submission).
-
-![DELETE Book response](screenshots/delete-book.png)
-
-### Database Records
-
-Existing SQLite CLI capture from the original implementation. It is not evidence of Neon PostgreSQL records; capture the SQL query results from Neon after deployment.
-
-![SQLite database records](screenshots/sqlite-records.png)
+The screenshots shared in the chat are visual proof of these live requests and responses. They are not yet committed as image files in this repository. The older files under `screenshots/` are from the original SQLite version and should not be treated as proof of the PostgreSQL deployment.
 
 ## Problems faced and solutions
 
@@ -182,5 +154,6 @@ Render may suspend free builds or services at free-tier limits. Keep payment det
 - [x] Configure the private `DATABASE_URL` environment variable in Render.
 - [x] Deploy the API and confirm the Render service connects to PostgreSQL.
 - [x] Manually test all five CRUD routes against the live service using Postman.
-- [ ] Replace historical screenshots with genuine live Postman captures and Neon database evidence.
+- [x] Manually verify the live GET-all, GET-by-ID, POST, PUT, and DELETE requests in Postman; live responses were shared during verification.
+- [ ] Add the shared live Postman screenshots and a Neon SQL Editor database screenshot as image files under `screenshots/`.
 - [x] Preserve `lab-01/` unchanged.
