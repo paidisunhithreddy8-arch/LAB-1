@@ -147,6 +147,30 @@ The following screenshots were uploaded to this repository and show the Neon pro
 
 ![Neon database records](screenshots/neon-database-records.png)
 
+## Neon PostgreSQL Database Evidence
+
+Screenshots provided for the Neon PostgreSQL database configuration and records:
+
+### Neon Project Overview
+
+![Neon project overview](screenshots/neon-project-overview.png)
+
+### Neon SQL Editor
+
+![Neon SQL Editor](screenshots/neon-sql-editor.png)
+
+### Neon Tables List
+
+![Neon tables list](screenshots/neon-tables-list.png)
+
+### Neon Book Table Columns
+
+![Neon book table columns](screenshots/neon-book-table-columns.png)
+
+### Neon Database Records
+
+![Neon database records](screenshots/neon-database-records.png)
+
 ## Problems faced and solutions
 
 The original SQLite setup encountered a Windows npm cache issue while downloading the native `sqlite3` module. The hosted version was migrated to PostgreSQL so it could use a managed database instead of Render's temporary local filesystem. The deployed Render logs confirmed a successful PostgreSQL connection, and all five CRUD routes were manually tested against the live API.
