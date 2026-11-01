@@ -1,5 +1,7 @@
 # Lab 2 — SQLite Database and CRUD Routes
 
+> The original lab used SQLite. The hosted application has now been migrated to PostgreSQL so it can use a free managed database rather than local disk storage. The five endpoint paths and response formats are retained.
+
 ## Student details
 
 | Field | Details |
@@ -13,11 +15,11 @@
 
 ## Deployment
 
-**Status: Not deployed.** This app is configured for a Render persistent disk in [`render.yaml`](render.yaml), because a SQLite database must live on persistent storage. Create the service from this blueprint and attach/confirm the persistent disk before relying on a public deployment. Do not configure the SQLite file on an ephemeral filesystem. No live URL is claimed yet.
+**Status: Not deployed.** The Render Blueprint is configured for the Free Web Service plan and an external Neon PostgreSQL database. A Neon connection URL must be added as the `DATABASE_URL` secret in Render before deployment. No live URL is claimed.
 
 ## What this lab teaches
 
-The app uses Express to receive HTTP requests and SQLite to store books in a local relational database. Each route awaits its database operation before it sends the response. SQL placeholders (`?`) keep user supplied values separate from SQL instructions.
+Express receives HTTP requests and PostgreSQL stores the books in a managed database. Database operations are asynchronous. User supplied values are sent as bound PostgreSQL parameters (`$1`, `$2`, and so on), separate from SQL instructions.
 
 ## Project structure
 
@@ -26,61 +28,54 @@ lab-02/
 ├── .env.example
 ├── .gitignore
 ├── README.md
-├── books.sql
-├── books.db                 # generated SQLite database, intentionally tracked
+├── books.db                 # retained SQLite file from the original lab; not used by the migrated server
+├── books.sql                # retained SQLite setup script; not used by the migrated server
 ├── package.json
 ├── package-lock.json
 ├── Postman-Lab-2-Collection.json
 ├── render.yaml
-├── server.js
-├── screenshots/             # capture real Postman/SQLite evidence here
+├── server.js                # Express API, PostgreSQL setup and sample seeding
+├── screenshots/             # existing evidence; see note below
 └── test/
-    └── books.test.js
+    └── books.test.js        # CRUD and seeding tests using pg-mem
 ```
 
-`node_modules/` is created locally by npm and ignored by Git. `.env` is ignored too. `.env.example` lists the available settings, but this app reads variables directly from the shell or hosting platform; it does not auto-load a `.env` file. The committed `books.db` is the starter database, while the Render service must set `DB_PATH=/var/data/books.db` so changes survive restarts and redeployments.
+`node_modules/` is installed locally and ignored by Git. `.env` is ignored too. `.env.example` contains a blank `DATABASE_URL` setting; it does not contain a real database credential. The old SQLite database and SQL file are retained for reference and are no longer read or written by the application.
 
 ## Requirements and installation
 
-Install Node.js 20.17+ and npm. The project uses Express for HTTP routes, `sqlite` for Promise-based database calls, `sqlite3` as the SQLite driver, and nodemon for automatic restarts. Supertest is used by the automated route tests.
+Install Node.js 20.17+ and npm. Express provides the HTTP routes, `pg` connects to PostgreSQL, nodemon restarts the local server after code changes, and `pg-mem` plus Supertest support automated tests without connecting to a real Neon project.
 
-In PowerShell, open a terminal in this `lab-02/` directory and run:
+In PowerShell, open a terminal in this `lab-02/` folder and run:
 
 ```powershell
 npm.cmd install
+npm.cmd test
 ```
-
-On Windows, `npm.cmd` avoids PowerShell script execution policy restrictions.
 
 ## Database setup
 
-The database file is `books.db`; its table is `book` with `id INTEGER PRIMARY KEY`, `title TEXT`, `author TEXT`, `price INTEGER`, and `pages INTEGER`. The schema and ten sample rows are in [`books.sql`](books.sql). A new empty database is initialized with the same table schema on server startup; the committed starter database already has the sample books.
+The application connects using the `DATABASE_URL` environment variable. Create a free PostgreSQL project in Neon and copy its pooled connection string from the Neon dashboard. Keep the connection string private; do not paste it into source code or commit it.
 
-To create/reseed it using the SQLite command-line program, run this from the `lab-02/` folder (the `-bail` flag stops at SQL errors):
-
-```powershell
-sqlite3.exe -bail books.db ".read books.sql"
-```
-
-If `sqlite3.exe` is not installed, download the official **sqlite-tools-win-x64** bundle from the [SQLite download page](https://www.sqlite.org/download.html), extract it, and either add its folder to `PATH` or run the command with the full path to `sqlite3.exe`.
-
-`books.sql` inserts the ten starter rows, so use this command only to create a fresh database or when you intentionally want to restore those sample records. To inspect existing data without changing it:
+For local development in PowerShell, set the variable in the terminal before starting the app. Substitute the connection string copied from your Neon dashboard:
 
 ```powershell
-sqlite3.exe books.db "SELECT * FROM book;"
+$env:DATABASE_URL = "<your Neon PostgreSQL connection string>"
 ```
+
+The server creates the PostgreSQL `book` table when it starts. Its columns are `id` (generated primary key), `title`, `author`, `price`, and `pages`. Startup inserts the ten sample books inside a transaction only when the table is empty. Repeated starts leave existing records as they are.
 
 ## Run the server
 
-Start with nodemon during development:
+After setting `DATABASE_URL`, run nodemon:
 
 ```powershell
 npm.cmd run dev
 ```
 
-Nodemon watches the project JavaScript and restarts the server after code changes. The API is at `http://localhost:3001`. Keep that terminal open while testing. Press `Ctrl+C` to stop the process. For a normal start without watching files, run `npm.cmd start`.
+The API listens at `http://localhost:3001`. Keep the terminal open while testing. Press `Ctrl+C` to stop it. For a normal start without watching files, run `npm.cmd start`.
 
-The asynchronous `initializeDBAndServer()` function opens SQLite and waits for that connection, initializes the table if needed, and only then starts Express. If opening or preparing the database fails, it logs the error and the server does not start.
+`initializeDBAndServer()` checks that `DATABASE_URL` is present, connects to PostgreSQL, creates the table and seeds it if empty. Express starts only after those database steps succeed. If the connection or initialization fails, the server does not start.
 
 ## API endpoints
 
@@ -104,7 +99,7 @@ Examples: `GET http://localhost:3001/books/` and `GET http://localhost:3001/book
 - `404 Not Found`: the requested book ID does not exist.
 - `500 Internal Server Error`: an unexpected server/database request error occurred.
 
-Every SQL statement that uses a request value binds it with `?` parameters. No request value is concatenated into SQL text.
+Every SQL statement that uses request values binds them with PostgreSQL parameters. Request data is never concatenated into SQL text.
 
 ## Automated verification
 
@@ -114,93 +109,79 @@ Run the automated tests with:
 npm.cmd test
 ```
 
-Tests exercise all five routes, invalid IDs and input, missing records, database writes, and a SQL injection-like title. These automated tests do not replace the assignment's Postman evidence. For manual Postman verification:
+Tests use `pg-mem`, an in-memory PostgreSQL-compatible test database. They exercise all five routes, invalid IDs and input, missing records, parameter binding, automatic seeding, repeat initialization, and error responses. Tests do not require a Neon URL and do not replace manual verification against the deployed database or the assignment's Postman evidence.
 
-The importable Postman collection is [`Postman-Lab-2-Collection.json`](Postman-Lab-2-Collection.json). It contains the five CRUD requests in the required order and includes a status assertion for each request. The POST test saves the actual returned ID as the collection variable `bookId`; PUT and DELETE use that value, and DELETE clears it after success. Its POST pre-request script clears an old ID before a new run, so later requests cannot accidentally use an ID from a previous run.
-
-### Import and run in Postman Web
-
-1. Start the API using `npm.cmd run dev` and keep the terminal open.
-2. Open Postman Web and select **Import**. Choose **Files**, then select `lab-02/Postman-Lab-2-Collection.json` from your project folder.
-3. The collection appears in the left sidebar. Open it and run its requests in order: GET all, GET one, POST, PUT, DELETE. You can send the requests individually in that order or use the collection Runner. Do not run PUT or DELETE unless POST succeeded and set `bookId`.
-4. In Postman Web, the agent selector is in the footer. Click it and select **Cloud Agent** to choose that agent. Important: Cloud Agent sends requests from Postman's servers and cannot reach your computer's `localhost`; these local URLs will fail with Cloud Agent. To actually run this local collection, select **Desktop Agent** in the same menu (install and open it if prompted), or use the Postman desktop app. This limitation is described in [Postman's agent documentation](https://learning.postman.com/docs/getting-started/basics/about-postman-agent).
-5. For each request, confirm the response status and the collection's test result. Expected statuses are `200`, `200`, `201`, `200`, `200` in collection order. POST creates a temporary record; the following PUT updates that returned ID, and DELETE removes that same record.
+The importable collection is [`Postman-Lab-2-Collection.json`](Postman-Lab-2-Collection.json). It contains the five CRUD requests in order and saves the returned POST ID as `bookId` for PUT and DELETE. For local testing, set the collection's request URLs to `http://localhost:3001` and use Postman's Desktop Agent (a cloud agent cannot reach your computer's localhost). For deployed testing, change the base URL to the actual Render service URL after deployment.
 
 ### Capture genuine screenshots
 
-Capture each screenshot only after its actual Postman response is visible. Keep the request method, URL, response status, response body, and Postman test result in view. Use Windows Snipping Tool (`Win+Shift+S`) or another real screen capture tool, then save the unaltered capture in `lab-02/screenshots/` with these names:
+Capture each screenshot only after its real request and response are visible. Keep the request method, URL, response status, response body, and Postman test result in view. Use Windows Snipping Tool (`Win+Shift+S`) or another real screen capture tool and save unaltered captures in `lab-02/screenshots/`.
 
-| Capture after | Save as |
-| --- | --- |
-| GET All Books response | `get-all-books.png` |
-| GET Book by ID response | `get-one-book.png` |
-| POST Create Book response, showing the returned ID | `post-book.png` |
-| PUT Update Book response | `put-book.png` |
-| DELETE Book response | `delete-book.png` |
-| SQLite query showing the updated temporary row after PUT and before DELETE | `sqlite-records.png` |
-
-For the SQLite capture, open a second PowerShell terminal in `lab-02/` and run:
-
-```powershell
-sqlite3.exe .\books.db "SELECT id, title, author, price, pages FROM book ORDER BY id;"
-```
-
-If `sqlite3.exe` is not on `PATH`, use its full installed path as described in the database setup section above. Capture this output after PUT so the updated temporary row is visible. After DELETE, run the query again and confirm that temporary row is absent; it should not be present in the screenshot captured before deletion.
-
-The error cases can also be tried manually: a nonnumeric ID and missing fields should return `400`, while a nonexistent numeric ID should return `404`. The required evidence filenames are also listed in [`screenshots/README.md`](screenshots/README.md).
+The existing screenshot references below are preserved from the original SQLite version. They are historical evidence and do not prove that the migrated PostgreSQL application or a Render deployment has been tested. After migration, recapture the CRUD endpoint screenshots against the local app or deployed app. For the database evidence, use the Neon SQL Editor to run `SELECT id, title, author, price, pages FROM book ORDER BY id;` and capture the actual results.
 
 ## Screenshots / Evidence
 
 ### GET All Books
 
-Postman response showing the list of sample books.
+Existing capture (from the original SQLite implementation; replace with a genuine capture of the migrated API before submission).
 
 ![GET All Books response](screenshots/get-all-books.png)
 
 ### GET Book by ID
 
-Postman response showing the book returned for ID 1.
+Existing capture (from the original SQLite implementation; replace with a genuine capture of the migrated API before submission).
 
 ![GET Book by ID response](screenshots/get-one-book.png)
 
 ### POST Create Book
 
-Postman response showing the newly created book and returned ID.
+Existing capture (from the original SQLite implementation; replace with a genuine capture of the migrated API before submission).
 
 ![POST Create Book response](screenshots/post-book.png)
 
 ### PUT Update Book
 
-Postman response showing the updated temporary book.
+Existing capture (from the original SQLite implementation; replace with a genuine capture of the migrated API before submission).
 
 ![PUT Update Book response](screenshots/put-book.png)
 
 ### DELETE Book
 
-Postman response confirming deletion of the temporary book.
+Existing capture (from the original SQLite implementation; replace with a genuine capture of the migrated API before submission).
 
 ![DELETE Book response](screenshots/delete-book.png)
 
-### SQLite Database Records
+### Database Records
 
-SQLite CLI output showing the database records, including the updated temporary book before deletion.
+Existing SQLite CLI capture from the original implementation. It is not evidence of Neon PostgreSQL records; capture the SQL query results from Neon after deployment.
 
 ![SQLite database records](screenshots/sqlite-records.png)
 
 ## Problems faced and solutions
 
-During setup, the Windows shared npm cache blocked a native `sqlite3` prebuilt download, causing npm to attempt a local compile without Visual Studio C++ Build Tools. Installing with a project-local npm cache fixed the download. A newer `sqlite3` release also replaced an older release whose build-time dependency tree was flagged by npm's audit; this project therefore requires Node.js 20.17 or newer. The issue is recorded here; it does not imply that Postman or deployment has been completed.
+The original SQLite setup encountered a Windows npm cache issue while downloading the native `sqlite3` module. This migration removes the SQLite runtime dependency; the original database and SQL file are retained locally for reference. PostgreSQL integration and the seeded records are verified by the automated PostgreSQL-compatible test suite; a live Neon connection has not yet been configured or tested.
 
-## Deployment with persistent SQLite data
+## Free deployment with Render and Neon
 
-The Render blueprint in `render.yaml` points the service root at `lab-02` and mounts a persistent disk at `/var/data`; it configures SQLite to write to `/var/data/books.db`. When importing the Blueprint, select `lab-02/render.yaml` as the Blueprint file. Render currently requires a paid web-service plan for persistent disks. Create the service from the blueprint, select a plan that supports the disk, wait for a successful deploy, and test the public endpoint URLs. A disk-backed SQLite file persists across service restarts; without the disk, filesystem changes may be lost. Add the real public base URL here only after deployment and live endpoint checks succeed.
+The [`render.yaml`](render.yaml) Blueprint selects Render's Free Web Service plan, uses `lab-02` as the service root, and does not attach a disk. Render's local filesystem is ephemeral, so the application stores all runtime book records in Neon PostgreSQL instead. Free Render web services can sleep when idle; the first request after sleep may take about a minute. Render free services have monthly usage limits. Neon Free currently includes 100 compute hours and 1 GB of database storage per project, and its free plan does not require a credit card. Review current provider limits before setup; do not select a paid plan or add a paid add-on.
+
+1. Create a Neon Free project and copy its PostgreSQL connection string. Do not share or commit the string.
+2. Connect the GitHub repository `paidisunhithreddy8-arch/LAB-1` to Render.
+3. Create a Blueprint from `lab-02/render.yaml` (select that file path if Render asks for a Blueprint file).
+4. Confirm the service is set to **Free** and has no disk attached. Do not choose a paid plan.
+5. In the Render service environment settings, add `DATABASE_URL` and paste the Neon connection string as a secret. The Blueprint intentionally leaves this value unsynced so no credential is stored in Git.
+6. Deploy only after the migrated changes have been committed and pushed. Wait for a successful build and service start.
+7. Test all five routes against the generated `onrender.com` URL. Verify seeded records and CRUD changes in Neon’s SQL Editor. Add a deployment URL to this README only after those live checks succeed.
+
+Render may suspend free builds or services at free-tier limits. Keep payment details off the Render account if you require a hard no-charge guarantee; without a payment method, Render documents that it suspends free services/builds rather than billing for overages.
 
 ## Submission checklist
 
-- [x] Lab 2 source, database seed SQL, dependency manifests, and Render persistent-disk configuration are in `lab-02/`.
-- [ ] Install dependencies successfully and run `npm.cmd test`.
-- [ ] Test all routes and error cases in Postman.
-- [ ] Capture and add the five genuine Postman screenshots and one SQLite CLI screenshot.
-- [ ] Confirm database rows after POST, PUT, and DELETE using SQLite CLI.
-- [ ] Create the Render service with its persistent disk and test the deployed API.
+- [x] Lab 2 source migrated to PostgreSQL with all five route paths and response formats preserved.
+- [x] Startup seeding inserts the ten sample books only into an empty table.
+- [x] Render Blueprint uses Free Web Service configuration and has no persistent disk.
+- [ ] Install dependencies and run `npm.cmd test` successfully.
+- [ ] Add the Neon connection string as the private `DATABASE_URL` environment variable in Render.
+- [ ] Deploy and manually test all routes and database writes against the live service.
+- [ ] Replace historical screenshots with genuine evidence from the migrated API and Neon database.
 - [ ] Re-run Lab 1 checks and confirm `lab-01/` remains unchanged.

@@ -1,10 +1,7 @@
-const path = require("node:path");
 const express = require("express");
-const sqlite3 = require("sqlite3");
-const { open } = require("sqlite");
+const { Pool } = require("pg");
 
 const PORT = Number(process.env.PORT) || 3001;
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, "books.db");
 const SAMPLE_BOOKS = [
   ["The Alchemist", "Paulo Coelho", 399, 208],
   ["Wings of Fire", "A. P. J. Abdul Kalam", 250, 180],
@@ -18,44 +15,49 @@ const SAMPLE_BOOKS = [
   ["The Little Prince", "Antoine de Saint-Exupery", 275, 96],
 ];
 
-const INSERT_BOOK_SQL = "INSERT INTO book (title, author, price, pages) VALUES (?, ?, ?, ?)";
+const CREATE_BOOK_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS book (
+    id SERIAL PRIMARY KEY,
+    title TEXT NOT NULL,
+    author TEXT NOT NULL,
+    price INTEGER NOT NULL CHECK (price >= 0),
+    pages INTEGER NOT NULL CHECK (pages > 0)
+  )
+`;
+const INSERT_BOOK_SQL = "INSERT INTO book (title, author, price, pages) VALUES ($1, $2, $3, $4)";
 
-async function initializeDatabase(db) {
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS book (
-      id INTEGER PRIMARY KEY,
-      title TEXT NOT NULL,
-      author TEXT NOT NULL,
-      price INTEGER NOT NULL CHECK (price >= 0),
-      pages INTEGER NOT NULL CHECK (pages > 0)
-    )
-  `);
+async function initializeDatabase(pool) {
+  await pool.query(CREATE_BOOK_TABLE_SQL);
+  await seedBooksIfEmpty(pool);
+}
 
-  // Lock the empty-table check and inserts together so concurrent startups
-  // cannot seed the same database twice.
-  await db.exec("BEGIN IMMEDIATE");
+async function seedBooksIfEmpty(pool) {
+  const client = await pool.connect();
   try {
-    const { count } = await db.get("SELECT COUNT(*) AS count FROM book");
-    if (count === 0) {
+    await client.query("BEGIN");
+    const { rows } = await client.query("SELECT COUNT(*) AS count FROM book");
+    if (Number(rows[0].count) === 0) {
       for (const book of SAMPLE_BOOKS) {
-        await db.run(INSERT_BOOK_SQL, book);
+        await client.query(INSERT_BOOK_SQL, book);
       }
     }
-    await db.exec("COMMIT");
+    await client.query("COMMIT");
   } catch (error) {
-    await db.exec("ROLLBACK");
+    await client.query("ROLLBACK");
     throw error;
+  } finally {
+    client.release();
   }
 }
 
-function createApp(db) {
+function createApp(pool) {
   const app = express();
   app.use(express.json());
 
   app.get("/books/", async (_req, res, next) => {
     try {
-      const books = await db.all("SELECT * FROM book ORDER BY id");
-      res.status(200).json(books);
+      const { rows } = await pool.query("SELECT * FROM book ORDER BY id");
+      res.status(200).json(rows);
     } catch (error) {
       next(error);
     }
@@ -65,9 +67,9 @@ function createApp(db) {
     const bookId = parseBookId(req.params.bookId, res);
     if (bookId === null) return;
     try {
-      const book = await db.get("SELECT * FROM book WHERE id = ?", [bookId]);
-      if (!book) return res.status(404).json({ error: "Book not found" });
-      res.status(200).json(book);
+      const { rows } = await pool.query("SELECT * FROM book WHERE id = $1", [bookId]);
+      if (!rows[0]) return res.status(404).json({ error: "Book not found" });
+      res.status(200).json(rows[0]);
     } catch (error) {
       next(error);
     }
@@ -77,12 +79,11 @@ function createApp(db) {
     const input = validateBook(req.body);
     if (input.error) return res.status(400).json({ error: input.error });
     try {
-      const result = await db.run(
-        "INSERT INTO book (title, author, price, pages) VALUES (?, ?, ?, ?)",
+      const { rows } = await pool.query(
+        `${INSERT_BOOK_SQL} RETURNING *`,
         [input.book.title, input.book.author, input.book.price, input.book.pages]
       );
-      const createdBook = await db.get("SELECT * FROM book WHERE id = ?", [result.lastID]);
-      res.status(201).json(createdBook);
+      res.status(201).json(rows[0]);
     } catch (error) {
       next(error);
     }
@@ -94,13 +95,12 @@ function createApp(db) {
     const input = validateBook(req.body);
     if (input.error) return res.status(400).json({ error: input.error });
     try {
-      const result = await db.run(
-        "UPDATE book SET title = ?, author = ?, price = ?, pages = ? WHERE id = ?",
+      const { rows } = await pool.query(
+        "UPDATE book SET title = $1, author = $2, price = $3, pages = $4 WHERE id = $5 RETURNING *",
         [input.book.title, input.book.author, input.book.price, input.book.pages, bookId]
       );
-      if (result.changes === 0) return res.status(404).json({ error: "Book not found" });
-      const updatedBook = await db.get("SELECT * FROM book WHERE id = ?", [bookId]);
-      res.status(200).json(updatedBook);
+      if (!rows[0]) return res.status(404).json({ error: "Book not found" });
+      res.status(200).json(rows[0]);
     } catch (error) {
       next(error);
     }
@@ -110,8 +110,8 @@ function createApp(db) {
     const bookId = parseBookId(req.params.bookId, res);
     if (bookId === null) return;
     try {
-      const result = await db.run("DELETE FROM book WHERE id = ?", [bookId]);
-      if (result.changes === 0) return res.status(404).json({ error: "Book not found" });
+      const { rows } = await pool.query("DELETE FROM book WHERE id = $1 RETURNING id", [bookId]);
+      if (!rows[0]) return res.status(404).json({ error: "Book not found" });
       res.status(200).json({ message: "Book deleted successfully" });
     } catch (error) {
       next(error);
@@ -147,19 +147,24 @@ function validateBook(body) {
 }
 
 async function initializeDBAndServer() {
-  let db;
+  if (!process.env.DATABASE_URL) {
+    const error = new Error("DATABASE_URL must be set before starting the server");
+    console.error(error.message);
+    process.exitCode = 1;
+    throw error;
+  }
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   try {
-    db = await open({ filename: DB_PATH, driver: sqlite3.Database });
-    await initializeDatabase(db);
-    const app = createApp(db);
+    await initializeDatabase(pool);
+    const app = createApp(pool);
     const server = app.listen(PORT, () => {
       console.log(`Lab 2 API listening at http://localhost:${PORT}`);
-      console.log(`SQLite database: ${DB_PATH}`);
+      console.log("Connected to the PostgreSQL database configured by DATABASE_URL");
     });
-    return { app, db, server };
+    return { app, pool, server };
   } catch (error) {
-    if (db) await db.close().catch(() => {});
-    console.error("Could not open or initialize the SQLite database:", error.message);
+    await pool.end().catch(() => {});
+    console.error("Could not connect to or initialize the PostgreSQL database:", error.message);
     process.exitCode = 1;
     throw error;
   }
@@ -169,4 +174,4 @@ if (require.main === module) {
   initializeDBAndServer().catch(() => {});
 }
 
-module.exports = { createApp, initializeDatabase, initializeDBAndServer, validateBook };
+module.exports = { createApp, initializeDatabase, initializeDBAndServer, seedBooksIfEmpty, validateBook };
