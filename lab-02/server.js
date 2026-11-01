@@ -5,6 +5,48 @@ const { open } = require("sqlite");
 
 const PORT = Number(process.env.PORT) || 3001;
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, "books.db");
+const SAMPLE_BOOKS = [
+  ["The Alchemist", "Paulo Coelho", 399, 208],
+  ["Wings of Fire", "A. P. J. Abdul Kalam", 250, 180],
+  ["Atomic Habits", "James Clear", 499, 320],
+  ["The Hobbit", "J. R. R. Tolkien", 450, 310],
+  ["Pride and Prejudice", "Jane Austen", 299, 432],
+  ["1984", "George Orwell", 350, 328],
+  ["The Blue Umbrella", "Ruskin Bond", 199, 120],
+  ["Ikigai", "Hector Garcia and Francesc Miralles", 399, 208],
+  ["Clean Code", "Robert C. Martin", 799, 464],
+  ["The Little Prince", "Antoine de Saint-Exupery", 275, 96],
+];
+
+const INSERT_BOOK_SQL = "INSERT INTO book (title, author, price, pages) VALUES (?, ?, ?, ?)";
+
+async function initializeDatabase(db) {
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS book (
+      id INTEGER PRIMARY KEY,
+      title TEXT NOT NULL,
+      author TEXT NOT NULL,
+      price INTEGER NOT NULL CHECK (price >= 0),
+      pages INTEGER NOT NULL CHECK (pages > 0)
+    )
+  `);
+
+  // Lock the empty-table check and inserts together so concurrent startups
+  // cannot seed the same database twice.
+  await db.exec("BEGIN IMMEDIATE");
+  try {
+    const { count } = await db.get("SELECT COUNT(*) AS count FROM book");
+    if (count === 0) {
+      for (const book of SAMPLE_BOOKS) {
+        await db.run(INSERT_BOOK_SQL, book);
+      }
+    }
+    await db.exec("COMMIT");
+  } catch (error) {
+    await db.exec("ROLLBACK");
+    throw error;
+  }
+}
 
 function createApp(db) {
   const app = express();
@@ -108,15 +150,7 @@ async function initializeDBAndServer() {
   let db;
   try {
     db = await open({ filename: DB_PATH, driver: sqlite3.Database });
-    await db.exec(`
-      CREATE TABLE IF NOT EXISTS book (
-        id INTEGER PRIMARY KEY,
-        title TEXT NOT NULL,
-        author TEXT NOT NULL,
-        price INTEGER NOT NULL CHECK (price >= 0),
-        pages INTEGER NOT NULL CHECK (pages > 0)
-      )
-    `);
+    await initializeDatabase(db);
     const app = createApp(db);
     const server = app.listen(PORT, () => {
       console.log(`Lab 2 API listening at http://localhost:${PORT}`);
@@ -135,4 +169,4 @@ if (require.main === module) {
   initializeDBAndServer().catch(() => {});
 }
 
-module.exports = { createApp, initializeDBAndServer, validateBook };
+module.exports = { createApp, initializeDatabase, initializeDBAndServer, validateBook };

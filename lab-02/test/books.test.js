@@ -1,9 +1,12 @@
 const assert = require("node:assert/strict");
+const { mkdtemp, rm } = require("node:fs/promises");
+const os = require("node:os");
+const path = require("node:path");
 const { after, before, test } = require("node:test");
 const request = require("supertest");
 const sqlite3 = require("sqlite3");
 const { open } = require("sqlite");
-const { createApp } = require("../server");
+const { createApp, initializeDatabase } = require("../server");
 
 let db;
 let client;
@@ -65,4 +68,51 @@ test("user input is sent to SQLite as bound query parameters", async () => {
   assert.equal(created.status, 201);
   assert.equal(created.body.title, injectionLikeTitle);
   assert.equal((await db.get("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?", ["book"])) .name, "book");
+});
+
+test("database initialization seeds ten books once and preserves data after reopening", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "lab-02-seed-test-"));
+  const filename = path.join(tempDir, "books.db");
+  let persistentDb;
+  try {
+    persistentDb = await open({ filename, driver: sqlite3.Database });
+    await initializeDatabase(persistentDb);
+    assert.equal((await persistentDb.get("SELECT COUNT(*) AS count FROM book")).count, 10);
+
+    await persistentDb.run(
+      "INSERT INTO book (title, author, price, pages) VALUES (?, ?, ?, ?)",
+      ["Persistence Check", "Test Author", 100, 50]
+    );
+    await persistentDb.close();
+
+    persistentDb = await open({ filename, driver: sqlite3.Database });
+    await initializeDatabase(persistentDb);
+    assert.equal((await persistentDb.get("SELECT COUNT(*) AS count FROM book")).count, 11);
+    assert.equal((await persistentDb.get("SELECT title FROM book WHERE title = ?", ["Persistence Check"])).title, "Persistence Check");
+  } finally {
+    if (persistentDb) await persistentDb.close().catch(() => {});
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("database initialization does not seed a non-empty book table", async () => {
+  const emptyDb = await open({ filename: ":memory:", driver: sqlite3.Database });
+  try {
+    await emptyDb.exec(`CREATE TABLE book (
+      id INTEGER PRIMARY KEY,
+      title TEXT NOT NULL,
+      author TEXT NOT NULL,
+      price INTEGER NOT NULL CHECK (price >= 0),
+      pages INTEGER NOT NULL CHECK (pages > 0)
+    )`);
+    await emptyDb.run(
+      "INSERT INTO book (title, author, price, pages) VALUES (?, ?, ?, ?)",
+      ["Keep Existing", "Test Author", 100, 50]
+    );
+    await initializeDatabase(emptyDb);
+    assert.equal((await emptyDb.get("SELECT COUNT(*) AS count FROM book")).count, 1);
+    assert.equal((await emptyDb.get("SELECT title FROM book WHERE id = ?", [1])).title, "Keep Existing");
+  } finally {
+    await emptyDb.close();
+  }
 });
