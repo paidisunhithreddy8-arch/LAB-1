@@ -131,7 +131,21 @@ The deployed API was tested using Postman at `https://lab-02-5ug9.onrender.com`.
 
 The Render deployment page showed **Deploy succeeded / Live**, and the service logs confirmed that it connected to the PostgreSQL database using `DATABASE_URL`. The POST, PUT, and DELETE sequence was completed against the deployed API.
 
-The screenshots shared in the chat are visual proof of these live requests and responses. They are not yet committed as image files in this repository. The older files under `screenshots/` are from the original SQLite version and should not be treated as proof of the PostgreSQL deployment.
+
+
+## Neon PostgreSQL Database Evidence
+
+The following screenshots were uploaded to this repository and show the Neon project, SQL Editor, public tables, the `book` table schema, and its database records.
+
+![Neon project overview](screenshots/neon-project-overview.png)
+
+![Neon SQL Editor](screenshots/neon-sql-editor.png)
+
+![Neon tables list](screenshots/neon-tables-list.png)
+
+![Book table columns](screenshots/neon-book-table-columns.png)
+
+![Neon database records](screenshots/neon-database-records.png)
 
 ## Problems faced and solutions
 
@@ -155,5 +169,6 @@ Render may suspend free builds or services at free-tier limits. Keep payment det
 - [x] Deploy the API and confirm the Render service connects to PostgreSQL.
 - [x] Manually test all five CRUD routes against the live service using Postman.
 - [x] Manually verify the live GET-all, GET-by-ID, POST, PUT, and DELETE requests in Postman; live responses were shared during verification.
-- [ ] Add the shared live Postman screenshots and a Neon SQL Editor database screenshot as image files under `screenshots/`.
+- [x] Add five Neon PostgreSQL evidence screenshots under `screenshots/`.
+- [ ] Add the five live Postman CRUD response screenshots under `screenshots/` if required by the submission rubric.
 - [x] Preserve `lab-01/` unchanged.
