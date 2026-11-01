@@ -30,6 +30,7 @@ lab-02/
 ├── books.db                 # generated SQLite database, intentionally tracked
 ├── package.json
 ├── package-lock.json
+├── Postman-Lab-2-Collection.json
 ├── render.yaml
 ├── server.js
 ├── screenshots/             # capture real Postman/SQLite evidence here
@@ -105,7 +106,7 @@ Examples: `GET http://localhost:3001/books/` and `GET http://localhost:3001/book
 
 Every SQL statement that uses a request value binds it with `?` parameters. No request value is concatenated into SQL text.
 
-## Verification
+## Automated verification
 
 Run the automated tests with:
 
@@ -115,12 +116,76 @@ npm.cmd test
 
 Tests exercise all five routes, invalid IDs and input, missing records, database writes, and a SQL injection-like title. These automated tests do not replace the assignment's Postman evidence. For manual Postman verification:
 
-1. Start the server, then create a Postman request for each method and path in the endpoint table.
-2. For POST, send `{"title":"Postman Sample","author":"Student","price":275,"pages":150}` as raw JSON. Record the returned ID.
-3. GET the new ID, PUT it with updated values, GET it again, then DELETE it and confirm GET returns `404`.
-4. Also try a nonnumeric ID, a nonexistent numeric ID, a missing field, and an invalid price. Note their `400` or `404` responses.
-5. Run `sqlite3.exe books.db "SELECT * FROM book;"` and compare the stored rows to the API results.
-6. Capture genuine screenshots with the request URL, method, response status, and response body visible. Save the five request captures and database capture using the filenames listed in [`screenshots/README.md`](screenshots/README.md). No screenshots are included until real captures are provided.
+The importable Postman collection is [`Postman-Lab-2-Collection.json`](Postman-Lab-2-Collection.json). It contains the five CRUD requests in the required order and includes a status assertion for each request. The POST test saves the actual returned ID as the collection variable `bookId`; PUT and DELETE use that value, and DELETE clears it after success. Its POST pre-request script clears an old ID before a new run, so later requests cannot accidentally use an ID from a previous run.
+
+### Import and run in Postman Web
+
+1. Start the API using `npm.cmd run dev` and keep the terminal open.
+2. Open Postman Web and select **Import**. Choose **Files**, then select `lab-02/Postman-Lab-2-Collection.json` from your project folder.
+3. The collection appears in the left sidebar. Open it and run its requests in order: GET all, GET one, POST, PUT, DELETE. You can send the requests individually in that order or use the collection Runner. Do not run PUT or DELETE unless POST succeeded and set `bookId`.
+4. In Postman Web, the agent selector is in the footer. Click it and select **Cloud Agent** to choose that agent. Important: Cloud Agent sends requests from Postman's servers and cannot reach your computer's `localhost`; these local URLs will fail with Cloud Agent. To actually run this local collection, select **Desktop Agent** in the same menu (install and open it if prompted), or use the Postman desktop app. This limitation is described in [Postman's agent documentation](https://learning.postman.com/docs/getting-started/basics/about-postman-agent).
+5. For each request, confirm the response status and the collection's test result. Expected statuses are `200`, `200`, `201`, `200`, `200` in collection order. POST creates a temporary record; the following PUT updates that returned ID, and DELETE removes that same record.
+
+### Capture genuine screenshots
+
+Capture each screenshot only after its actual Postman response is visible. Keep the request method, URL, response status, response body, and Postman test result in view. Use Windows Snipping Tool (`Win+Shift+S`) or another real screen capture tool, then save the unaltered capture in `lab-02/screenshots/` with these names:
+
+| Capture after | Save as |
+| --- | --- |
+| GET All Books response | `get-all-books.png` |
+| GET Book by ID response | `get-one-book.png` |
+| POST Create Book response, showing the returned ID | `post-book.png` |
+| PUT Update Book response | `put-book.png` |
+| DELETE Book response | `delete-book.png` |
+| SQLite query showing the updated temporary row after PUT and before DELETE | `sqlite-records.png` |
+
+For the SQLite capture, open a second PowerShell terminal in `lab-02/` and run:
+
+```powershell
+sqlite3.exe .\books.db "SELECT id, title, author, price, pages FROM book ORDER BY id;"
+```
+
+If `sqlite3.exe` is not on `PATH`, use its full installed path as described in the database setup section above. Capture this output after PUT so the updated temporary row is visible. After DELETE, run the query again and confirm that temporary row is absent; it should not be present in the screenshot captured before deletion.
+
+The error cases can also be tried manually: a nonnumeric ID and missing fields should return `400`, while a nonexistent numeric ID should return `404`. The required evidence filenames are also listed in [`screenshots/README.md`](screenshots/README.md).
+
+## Screenshots / Evidence
+
+### GET All Books
+
+Postman response showing the list of sample books.
+
+![GET All Books response](screenshots/get-all-books.png)
+
+### GET Book by ID
+
+Postman response showing the book returned for ID 1.
+
+![GET Book by ID response](screenshots/get-one-book.png)
+
+### POST Create Book
+
+Postman response showing the newly created book and returned ID.
+
+![POST Create Book response](screenshots/post-book.png)
+
+### PUT Update Book
+
+Postman response showing the updated temporary book.
+
+![PUT Update Book response](screenshots/put-book.png)
+
+### DELETE Book
+
+Postman response confirming deletion of the temporary book.
+
+![DELETE Book response](screenshots/delete-book.png)
+
+### SQLite Database Records
+
+SQLite CLI output showing the database records, including the updated temporary book before deletion.
+
+![SQLite database records](screenshots/sqlite-records.png)
 
 ## Problems faced and solutions
 
