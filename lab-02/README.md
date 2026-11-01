@@ -18,7 +18,11 @@
 
 https://lab-02-5ug9.onrender.com
 
-**Status: Not deployed.** The Render Blueprint is configured for the Free Web Service plan and an external Neon PostgreSQL database. A Neon connection URL must be added as the `DATABASE_URL` secret in Render before deployment. No live URL is claimed.
+**Status:** Successfully deployed on Render.
+
+**Live API:** https://lab-02-5ug9.onrender.com
+
+**Database:** PostgreSQL, connected using the `DATABASE_URL` environment variable.
 
 ## What this lab teaches
 
