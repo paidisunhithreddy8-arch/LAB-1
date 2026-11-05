@@ -17,7 +17,7 @@
 
 **Status:** Successfully deployed on Render and connected to Neon PostgreSQL through the `DATABASE_URL` environment variable.
 
-**Live API:** https://lab-02-5ug9.onrender.com
+**Live API:** https://lab-02-5ug9.onrender.com/books/?utm_source=chatgpt.com
 
 The live service was verified through all five CRUD endpoints: GET all books, GET book by ID, POST, PUT, and DELETE. POST created book ID 11, PUT updated it, and DELETE removed it successfully. The Render logs confirmed the PostgreSQL connection and that the service was live.
 
