@@ -1,0 +1,422 @@
+{
+  "info": {
+    "_postman_id": "lab-03-books-rest-api",
+    "name": "Backend Development Fundamentals - Lab 3 Books REST API",
+    "description": "Complete Postman collection for Lab 3 Books REST API covering search, sort, pagination, price filtering, create, update, delete, and error handling.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3002",
+      "type": "string"
+    },
+    {
+      "key": "bookId",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - GET /books (Default params - all 10 books)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/books",
+          "host": ["{{baseUrl}}"],
+          "path": ["books"]
+        },
+        "description": "Retrieves all seeded books sorted by id ASC with default limit=10 and offset=0 (Expect 200 OK)."
+      },
+      "response": []
+    },
+    {
+      "name": "02 - GET /books?search_q=orwell (Search by author)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/books?search_q=orwell",
+          "host": ["{{baseUrl}}"],
+          "path": ["books"],
+          "query": [
+            {
+              "key": "search_q",
+              "value": "orwell"
+            }
+          ]
+        },
+        "description": "Filters books by author substring 'orwell' using ILIKE (Expect 200 OK with George Orwell's 1984)."
+      },
+      "response": []
+    },
+    {
+      "name": "03 - GET /books?search_q=the (Search by title substring)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/books?search_q=the",
+          "host": ["{{baseUrl}}"],
+          "path": ["books"],
+          "query": [
+            {
+              "key": "search_q",
+              "value": "the"
+            }
+          ]
+        },
+        "description": "Case-insensitive title search matching 'The Alchemist', 'The Hobbit', etc. (Expect 200 OK)."
+      },
+      "response": []
+    },
+    {
+      "name": "04 - GET /books?order_by=price&order=desc (Sort price descending)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/books?order_by=price&order=desc",
+          "host": ["{{baseUrl}}"],
+          "path": ["books"],
+          "query": [
+            {
+              "key": "order_by",
+              "value": "price"
+            },
+            {
+              "key": "order",
+              "value": "desc"
+            }
+          ]
+        },
+        "description": "Sorts books by price in descending order with Clean Code (799) first (Expect 200 OK)."
+      },
+      "response": []
+    },
+    {
+      "name": "05 - GET /books?min_price=300&max_price=500 (Price range filter)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/books?min_price=300&max_price=500",
+          "host": ["{{baseUrl}}"],
+          "path": ["books"],
+          "query": [
+            {
+              "key": "min_price",
+              "value": "300"
+            },
+            {
+              "key": "max_price",
+              "value": "500"
+            }
+          ]
+        },
+        "description": "Filters books with price between 300 and 500 inclusive (Expect 200 OK)."
+      },
+      "response": []
+    },
+    {
+      "name": "06 - GET /books?limit=3&offset=0 (Pagination page 1)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/books?limit=3&offset=0",
+          "host": ["{{baseUrl}}"],
+          "path": ["books"],
+          "query": [
+            {
+              "key": "limit",
+              "value": "3"
+            },
+            {
+              "key": "offset",
+              "value": "0"
+            }
+          ]
+        },
+        "description": "Returns first 3 books (Expect 200 OK)."
+      },
+      "response": []
+    },
+    {
+      "name": "07 - GET /books?limit=3&offset=3 (Pagination page 2)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/books?limit=3&offset=3",
+          "host": ["{{baseUrl}}"],
+          "path": ["books"],
+          "query": [
+            {
+              "key": "limit",
+              "value": "3"
+            },
+            {
+              "key": "offset",
+              "value": "3"
+            }
+          ]
+        },
+        "description": "Returns books 4 through 6 (Expect 200 OK)."
+      },
+      "response": []
+    },
+    {
+      "name": "08 - GET /books (Combined query parameters)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/books?search_q=clean&order_by=price&order=asc&limit=5&offset=0",
+          "host": ["{{baseUrl}}"],
+          "path": ["books"],
+          "query": [
+            {
+              "key": "search_q",
+              "value": "clean"
+            },
+            {
+              "key": "order_by",
+              "value": "price"
+            },
+            {
+              "key": "order",
+              "value": "asc"
+            },
+            {
+              "key": "limit",
+              "value": "5"
+            },
+            {
+              "key": "offset",
+              "value": "0"
+            }
+          ]
+        },
+        "description": "Combines search, order_by, order, limit, and offset (Expect 200 OK)."
+      },
+      "response": []
+    },
+    {
+      "name": "09 - GET /books?order_by=invalid (Error: bad order_by)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/books?order_by=invalid",
+          "host": ["{{baseUrl}}"],
+          "path": ["books"],
+          "query": [
+            {
+              "key": "order_by",
+              "value": "invalid"
+            }
+          ]
+        },
+        "description": "Tests query validation for unallowed sort field (Expect 400 Bad Request)."
+      },
+      "response": []
+    },
+    {
+      "name": "10 - GET /books?limit=abc (Error: non-integer limit)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/books?limit=abc",
+          "host": ["{{baseUrl}}"],
+          "path": ["books"],
+          "query": [
+            {
+              "key": "limit",
+              "value": "abc"
+            }
+          ]
+        },
+        "description": "Tests query validation for non-integer pagination limit (Expect 400 Bad Request)."
+      },
+      "response": []
+    },
+    {
+      "name": "11 - POST /books (Create valid book & save ID)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "    var data = pm.response.json();",
+              "    if (data && data.id) {",
+              "        pm.collectionVariables.set('bookId', data.id);",
+              "        console.log('Saved bookId:', data.id);",
+              "    }",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Designing Data-Intensive Applications\",\n  \"author\": \"Martin Kleppmann\",\n  \"price\": 850,\n  \"pages\": 616\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/books",
+          "host": ["{{baseUrl}}"],
+          "path": ["books"]
+        },
+        "description": "Inserts a new book record and returns 201 Created with the new book ID."
+      },
+      "response": []
+    },
+    {
+      "name": "12 - POST /books (Error: missing title)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"author\": \"Martin Kleppmann\",\n  \"price\": 850,\n  \"pages\": 616\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/books",
+          "host": ["{{baseUrl}}"],
+          "path": ["books"]
+        },
+        "description": "Tests validation when title is omitted (Expect 400 Bad Request)."
+      },
+      "response": []
+    },
+    {
+      "name": "13 - POST /books (Error: string price)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Test Book\",\n  \"author\": \"Test Author\",\n  \"price\": \"free\",\n  \"pages\": 100\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/books",
+          "host": ["{{baseUrl}}"],
+          "path": ["books"]
+        },
+        "description": "Tests validation when numeric price is sent as a string (Expect 400 Bad Request)."
+      },
+      "response": []
+    },
+    {
+      "name": "14 - PUT /books/:id (Update created book)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Designing Data-Intensive Applications (Updated)\",\n  \"author\": \"Martin Kleppmann\",\n  \"price\": 899,\n  \"pages\": 620\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/books/{{bookId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["books", "{{bookId}}"]
+        },
+        "description": "Updates fields of the book created in request 11 (Expect 200 OK)."
+      },
+      "response": []
+    },
+    {
+      "name": "15 - PUT /books/99999 (Error: non-existent book ID)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Non Existent\",\n  \"author\": \"Nobody\",\n  \"price\": 500,\n  \"pages\": 100\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/books/99999",
+          "host": ["{{baseUrl}}"],
+          "path": ["books", "99999"]
+        },
+        "description": "Attempts update on an ID that does not exist in the database (Expect 404 Not Found)."
+      },
+      "response": []
+    },
+    {
+      "name": "16 - DELETE /books/:id (Delete created book)",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/books/{{bookId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["books", "{{bookId}}"]
+        },
+        "description": "Deletes the book created in request 11 (Expect 200 OK with success message)."
+      },
+      "response": []
+    },
+    {
+      "name": "17 - DELETE /books/99999 (Error: non-existent book ID)",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/books/99999",
+          "host": ["{{baseUrl}}"],
+          "path": ["books", "99999"]
+        },
+        "description": "Attempts deletion on an ID that does not exist in the database (Expect 404 Not Found)."
+      },
+      "response": []
+    },
+    {
+      "name": "18 - GET /unknown-route (Error: 404 fallback)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/unknown-route",
+          "host": ["{{baseUrl}}"],
+          "path": ["unknown-route"]
+        },
+        "description": "Requests an unregistered endpoint to verify global JSON 404 handling (Expect 404 Not Found)."
+      },
+      "response": []
+    }
+  ]
+}
