@@ -227,6 +227,21 @@ function createApp(pool) {
   const app = express();
   app.use(express.json());
 
+  // GET / — health / info endpoint
+  app.get("/", (_req, res) => {
+    res.status(200).json({
+      api:     "Lab 3 — Books REST API",
+      status:  "running",
+      version: "1.0.0",
+      routes: [
+        "GET  /books",
+        "POST /books",
+        "PUT  /books/:id",
+        "DELETE /books/:id",
+      ],
+    });
+  });
+
   // GET /books — list, search, sort, paginate, filter
   app.get("/books", async (req, res, next) => {
     const result = buildGetBooksQuery(req.query);
@@ -316,7 +331,17 @@ async function initializeDBAndServer() {
     process.exitCode = 1;
     throw error;
   }
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  // Render PostgreSQL requires SSL. NODE_ENV=production enables it automatically.
+  // Locally (without NODE_ENV=production) SSL is skipped so tests keep working.
+  const sslConfig =
+    process.env.NODE_ENV === "production"
+      ? { rejectUnauthorized: false }
+      : false;
+
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: sslConfig,
+  });
   try {
     await initializeDatabase(pool);
     const app    = createApp(pool);

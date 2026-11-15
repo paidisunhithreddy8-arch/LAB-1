@@ -1,59 +1,232 @@
-# Lab 3 — Books REST API with Search, Sorting, Pagination & Price Filtering
+# Lab 3 — Books REST API (Node.js + Express + PostgreSQL)
 
-## Student Information
+> **Live Deployment URL:** *(to be updated after Render deployment)*
+>
+> **GET /books live:** *(to be updated)*
 
-| Field | Details |
-|---|---|
-| **Student Name** | Paidi Sunhith Reddy |
-| **Registration Number** | 252U1R1174 |
-| **Class** | 214 |
-| **Section** | CSE1D |
-| **College** | Aurora Deemed to be University |
-| **Course** | Backend Development Fundamentals |
-| **Academic Year** | II |
-| **Branch** | CSE |
-| **Faculty** | Shiva Teja |
-| **GitHub Username** | [paidisunhithreddy8-arch](https://github.com/paidisunhithreddy8-arch) |
+---
+
+## Student Details
+
+| Field               | Value                             |
+|---------------------|-----------------------------------|
+| **Name**            | Paidi Sunhith Reddy               |
+| **Registration No.**| 252U1R1174                        |
+| **Class**           | 214                               |
+| **Section**         | CSE1D                             |
+| **College**         | Aurora Deemed to be University    |
+| **Course**          | Backend Development Fundamentals  |
+| **Faculty**         | Joel Prashanth D                  |
+| **Lab**             | Lab 3 — PostgreSQL REST API       |
 
 ---
 
 ## Objective
 
-Build an Express and PostgreSQL REST API for a **Books** resource supporting advanced querying capabilities:
-1. **Search** across book title and author using case-insensitive SQL `LIKE` / `ILIKE` pattern matching.
-2. **Sorting** by allowable fields (`id`, `title`, `author`, `price`, `pages`) in ascending or descending order.
-3. **Pagination** with configurable `limit` and `offset` (defaulting to 10 and 0).
-4. **Price range filtering** using `min_price` and `max_price`.
-5. **Creation (`POST /books`)** with strict input validation for title, author, price, and pages.
-6. **Updates (`PUT /books/:id`)** and **Deletions (`DELETE /books/:id`)**.
-7. Correct **HTTP status codes** (`200 OK`, `201 Created`, `400 Bad Request`, `404 Not Found`, `500 Internal Server Error`).
-8. Identify, document, and resolve **four official debugging exercises** encountered during backend development.
+Build a complete Books REST API using Node.js, Express and PostgreSQL that supports:
+
+- Full CRUD: Create, Read, Update, Delete books
+- Case-insensitive full-text search across title and author
+- Sorting by any column (asc/desc)
+- Pagination (limit/offset)
+- Price range filtering (min_price/max_price)
+- Parameterized SQL queries (no SQL injection)
+- Input validation with correct HTTP status codes
+- Automated tests using `pg-mem` (in-memory PostgreSQL)
+- Deployment to Render with a live PostgreSQL database
 
 ---
 
 ## Project Structure
 
-```text
+```
 lab-03/
-├── .env.example                    # Environment variable template (PORT=3002, DATABASE_URL)
-├── .gitignore                      # Excludes node_modules, .env, and debug logs
-├── books.sql                       # PostgreSQL schema definition and 10 reference seed records
-├── package.json                    # Project manifest, scripts, runtime & dev dependencies
-├── package-lock.json               # Locked dependency tree
-├── Postman-Lab-3-Collection.json   # 18-request Postman test suite
-├── README.md                       # Complete documentation, architecture, and viva guide
-├── SUBMISSION-CHECKLIST.md         # Step-by-step verification and submission checklist
-├── server.js                       # Express application factory, SQL query builder, and endpoints
-├── screenshots/                    # Postman execution evidence
+├── server.js                    # Express API + PostgreSQL logic
+├── package.json
+├── package-lock.json
+├── books.sql                    # Reference SQL schema + seed data
+├── .env.example                 # Template for local environment variables
+├── .gitignore
+├── Postman-Lab-3-Collection.json
+├── README.md
+├── SUBMISSION-CHECKLIST.md
+├── screenshots/                 # Postman evidence screenshots
 └── test/
-    └── books.test.js               # 54 automated tests using pg-mem, Supertest, and node:test
+    └── books.test.js            # 54 automated tests (pg-mem)
 ```
 
 ---
 
-## Database Architecture & Seed Data
+## Prerequisites
 
-The project uses PostgreSQL with parameterized SQL statements to safeguard against SQL injection. The database table is created automatically at startup if it does not already exist:
+| Tool     | Version   |
+|----------|-----------|
+| Node.js  | >= 20.17  |
+| npm      | >= 9      |
+| PostgreSQL | Any (local or Render) |
+
+---
+
+## Local Setup
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/paidisunhithreddy8-arch/LAB-1.git
+cd LAB-1/lab-03
+```
+
+### 2. Install dependencies
+
+```bash
+npm install
+```
+
+### 3. Configure environment variables
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env`:
+
+```
+PORT=3002
+DATABASE_URL=postgresql://user:password@host:5432/dbname
+```
+
+> **Never commit `.env` to Git.** It is listed in `.gitignore`.
+
+### 4. Start the server
+
+```bash
+npm start
+```
+
+The server will:
+1. Connect to PostgreSQL using `DATABASE_URL`
+2. Create the `book` table if it does not exist
+3. Seed 10 books if the table is empty
+4. Start listening on `http://localhost:3002`
+
+---
+
+## npm Scripts
+
+| Script           | Command               | Purpose                        |
+|------------------|-----------------------|-------------------------------|
+| `npm start`      | `node server.js`      | Start production server        |
+| `npm run dev`    | `nodemon server.js`   | Start with auto-reload         |
+| `npm test`       | `node --test`         | Run all 54 automated tests     |
+
+---
+
+## API Endpoints
+
+### `GET /` — Health / Info
+
+Returns API status and available routes.
+
+**Response 200:**
+```json
+{
+  "api": "Lab 3 — Books REST API",
+  "status": "running",
+  "version": "1.0.0",
+  "routes": ["GET /books", "POST /books", "PUT /books/:id", "DELETE /books/:id"]
+}
+```
+
+---
+
+### `GET /books` — List Books
+
+Returns a paginated, filtered, sorted list of books.
+
+**Query Parameters:**
+
+| Parameter    | Type    | Default | Description                                   |
+|--------------|---------|---------|-----------------------------------------------|
+| `search_q`   | string  | —       | Case-insensitive search in title and author   |
+| `order_by`   | string  | `id`    | Sort field: `id`, `title`, `author`, `price`, `pages` |
+| `order`      | string  | `asc`   | Sort direction: `asc` or `desc`               |
+| `limit`      | integer | `10`    | Max results per page (must be > 0)            |
+| `offset`     | integer | `0`     | Number of records to skip (must be >= 0)      |
+| `min_price`  | integer | —       | Minimum price filter (inclusive)              |
+| `max_price`  | integer | —       | Maximum price filter (inclusive)              |
+
+**Example Requests:**
+
+```
+GET /books
+GET /books?search_q=clean
+GET /books?order_by=price&order=desc
+GET /books?limit=3&offset=0
+GET /books?min_price=300&max_price=500
+GET /books?search_q=the&order_by=price&order=asc&limit=5
+```
+
+**Response 200:** Array of book objects  
+**Response 400:** Validation error (bad parameter values)
+
+---
+
+### `POST /books` — Create a Book
+
+**Request Body (JSON):**
+
+```json
+{
+  "title": "Clean Code",
+  "author": "Robert C. Martin",
+  "price": 799,
+  "pages": 464
+}
+```
+
+**Rules:** title and author must be non-empty strings; price must be a non-negative integer; pages must be a positive integer.
+
+**Response 201:** Created book object with `id`  
+**Response 400:** Validation error
+
+---
+
+### `PUT /books/:id` — Update a Book
+
+Same body as POST. Replaces all fields.
+
+**Response 200:** Updated book object  
+**Response 400:** Invalid id or body  
+**Response 404:** Book not found
+
+---
+
+### `DELETE /books/:id` — Delete a Book
+
+**Response 200:**
+```json
+{ "message": "Book deleted successfully" }
+```
+**Response 400:** Invalid id  
+**Response 404:** Book not found
+
+---
+
+## HTTP Status Codes
+
+| Code | Meaning                  | When                                |
+|------|--------------------------|-------------------------------------|
+| 200  | OK                       | Successful GET, PUT, DELETE         |
+| 201  | Created                  | Successful POST                     |
+| 400  | Bad Request              | Invalid input / parameters          |
+| 404  | Not Found                | Book id doesn't exist / unknown route |
+| 500  | Internal Server Error    | Unexpected database error           |
+
+---
+
+## PostgreSQL Setup
+
+### Schema
 
 ```sql
 CREATE TABLE IF NOT EXISTS book (
@@ -65,239 +238,101 @@ CREATE TABLE IF NOT EXISTS book (
 );
 ```
 
-### Initial Seed Records
+The server creates this table automatically at startup. See `books.sql` for the full reference schema with seed data.
 
-When the server starts against an empty database, it transactionally seeds the following 10 records:
+### Local PostgreSQL
 
-| id | title | author | price | pages |
-|---|---|---|---|---|
-| 1 | The Alchemist | Paulo Coelho | 399 | 208 |
-| 2 | Wings of Fire | A. P. J. Abdul Kalam | 250 | 180 |
-| 3 | Atomic Habits | James Clear | 499 | 320 |
-| 4 | The Hobbit | J. R. R. Tolkien | 450 | 310 |
-| 5 | Pride and Prejudice | Jane Austen | 299 | 432 |
-| 6 | 1984 | George Orwell | 350 | 328 |
-| 7 | The Blue Umbrella | Ruskin Bond | 199 | 120 |
-| 8 | Ikigai | Hector Garcia and Francesc Miralles | 399 | 208 |
-| 9 | Clean Code | Robert C. Martin | 799 | 464 |
-| 10 | The Little Prince | Antoine de Saint-Exupery | 275 | 96 |
-
-Seeding is idempotent (`seedBooksIfEmpty`), ensuring existing records are never duplicated on subsequent server restarts.
-
----
-
-## API Endpoints
-
-All requests and responses use JSON formatting.
-
-| Method | Endpoint | Description | Success Status | Error Statuses |
-|---|---|---|---|---|
-| `GET` | `/books` | List books with optional search, sort, pagination & price filters | `200 OK` | `400 Bad Request` |
-| `POST` | `/books` | Create a new book record | `201 Created` | `400 Bad Request` |
-| `PUT` | `/books/:id` | Update an existing book record by integer ID | `200 OK` | `400 Bad Request`, `404 Not Found` |
-| `DELETE` | `/books/:id` | Delete a book record by integer ID | `200 OK` | `400 Bad Request`, `404 Not Found` |
-| `*` | Any unmatched route | Global not-found fallback handler | — | `404 Not Found` |
-
-### Query Parameters for `GET /books`
-
-All query parameters are optional and can be combined:
-
-| Parameter | Type | Default | Valid Values | Description |
-|---|---|---|---|---|
-| `search_q` | string | none | Any text string | Case-insensitive substring match against `title` or `author` using SQL `ILIKE`. |
-| `order_by` | string | `id` | `id`, `title`, `author`, `price`, `pages` | Column to sort by. Invalid column names return 400. |
-| `order` | string | `asc` | `asc`, `desc`, `ASC`, `DESC` | Sort direction. Values other than `asc` or `desc` return 400. |
-| `limit` | integer | `10` | Positive integer (`> 0`) | Maximum number of rows to return. Non-integers or values $\le 0$ return 400. |
-| `offset` | integer | `0` | Non-negative integer ($\ge 0$) | Number of rows to skip. Non-integers or negative values return 400. |
-| `min_price`| integer | none | Non-negative integer ($\ge 0$) | Filters rows where `price >= min_price`. |
-| `max_price`| integer | none | Non-negative integer ($\ge 0$) | Filters rows where `price <= max_price`. Must be $\ge min\_price$ if both are set. |
-
-### Request Body Schema (`POST /books` & `PUT /books/:id`)
-
-```json
-{
-  "title": "Designing Data-Intensive Applications",
-  "author": "Martin Kleppmann",
-  "price": 850,
-  "pages": 616
-}
-```
-
-Validation criteria:
-- `title`: Non-empty string (trimmed).
-- `author`: Non-empty string (trimmed).
-- `price`: Non-negative integer (`price >= 0`).
-- `pages`: Positive integer (`pages >= 1`).
-
----
-
-## HTTP Status Codes
-
-- **200 OK**: Request succeeded (GET books list, PUT book updated, DELETE book deleted).
-- **201 Created**: Resource successfully created via POST.
-- **400 Bad Request**: Malformed JSON, validation failure on request body, invalid `:id`, or invalid query parameters.
-- **404 Not Found**: The target book ID does not exist, or the requested URL path is unregistered.
-- **500 Internal Server Error**: Unexpected database or server exception caught by Express error middleware.
-
----
-
-## Debugging Exercises
-
-Lab 3 emphasizes real-world backend debugging techniques. Four specific bugs were investigated, analyzed, and resolved:
-
-### 1. EADDRINUSE Port Conflict
-- **Symptom**: `Error: listen EADDRINUSE: address already in use :::3002`.
-- **Root Cause**: The application hardcoded port `3002` without checking the environment, causing a fatal collision whenever a background process or previous test instance was still holding the port.
-- **Resolution**: Dynamically read port from `process.env.PORT` with fallback:
-  ```javascript
-  const PORT = Number(process.env.PORT) || 3002;
-  ```
-  In tests, `createApp(pool)` is tested directly with Supertest or bound to port `0` for zero-collision ephemeral ports.
-
-### 2. Wrong Import Path
-- **Symptom**: `Error: Cannot find module './pg'` or `MODULE_NOT_FOUND`.
-- **Root Cause**: The developer attempted a relative path import `require("./pg")` instead of importing the installed npm package `require("pg")`.
-- **Resolution**: Corrected the require statement to reference the package name directly:
-  ```javascript
-  const { Pool } = require("pg");
-  ```
-
-### 3. Table-Name Typo (No Such Table)
-- **Symptom**: PostgreSQL error `relation "books" does not exist`.
-- **Root Cause**: The database table was defined as singular `book` in the DDL schema, but the query string in `server.js` queried `SELECT * FROM books`.
-- **Resolution**: Standardized the query to match the table name:
-  ```javascript
-  const sql = `SELECT * FROM book ${whereClause} ...`;
-  ```
-
-### 4. Missing `await`
-- **Symptom**: Route handler returned an empty response, unresolved promise, or failed silently without waiting for database query execution.
-- **Root Cause**: Calling `pool.query(...)` without the `await` keyword in an asynchronous route handler means `rows` is undefined when sending the response.
-- **Resolution**: Prefixed the query call with `await`:
-  ```javascript
-  const { rows } = await pool.query(result.sql, result.params);
-  res.status(200).json(rows);
-  ```
-
----
-
-## Prerequisites & Installation
-
-### Prerequisites
-- Node.js 20.17.0 or higher.
-- npm (Node Package Manager).
-
-### Installation
-
-From the `lab-03/` directory:
-
-```powershell
-npm.cmd install
-```
-
-### Running Automated Tests
-
-Tests execute in-memory using `pg-mem`, requiring no live database connection:
-
-```powershell
-npm.cmd test
-```
-
-### Starting the Server
-
-Create a `.env` file copying from `.env.example`:
-
-```powershell
-PORT=3002
-DATABASE_URL=postgresql://user:password@hostname:5432/dbname?sslmode=require
-```
-
-Start the server:
-
-```powershell
-# Production mode
-npm.cmd start
-
-# Development mode (auto-restart on file save via nodemon)
-npm.cmd run dev
+```bash
+psql -U postgres -c "CREATE DATABASE lab3;"
+# Set DATABASE_URL=postgresql://postgres:password@localhost:5432/lab3
+npm start
 ```
 
 ---
 
-## Automated Verification
+## Render Deployment
 
-The test suite in [`test/books.test.js`](test/books.test.js) uses Node's native test runner (`node:test`), `supertest`, and `pg-mem`.
+### Step 1 — Create a PostgreSQL database on Render
 
-**Result:** 54 passing tests across 12 test suites:
-- Defaults and initial 10 records verification.
-- Substring searches by title and author (`ILIKE`).
-- Ascending and descending sorting (`asc`, `desc`, `ASC`, `DESC`).
-- Positive and boundary pagination tests (`limit`, `offset`).
-- Single and combined price filters (`min_price`, `max_price`).
-- Combined multi-parameter queries.
-- POST creation, trimming, and validation error branches.
-- PUT updates, ID validation, and 404 handling.
-- DELETE removals, idempotency checks, and 404 handling.
-- Global 404 fallback verification.
-- Database 500 error handling and seed idempotency.
-- Unit validation testing for `validateBook`.
+1. Go to https://dashboard.render.com
+2. Click **New → PostgreSQL**
+3. Choose the free plan, give it a name (e.g. `lab3-db`)
+4. After creation, copy the **Internal Database URL**
+
+### Step 2 — Create a Web Service
+
+1. Click **New → Web Service**
+2. Connect your GitHub account and select `paidisunhithreddy8-arch/LAB-1`
+3. Configure:
+
+| Setting          | Value              |
+|------------------|--------------------|
+| Root Directory   | `lab-03`           |
+| Runtime          | Node               |
+| Build Command    | `npm install`      |
+| Start Command    | `npm start`        |
+
+4. Under **Environment Variables**, add:
+
+| Key            | Value                              |
+|----------------|------------------------------------|
+| `DATABASE_URL` | *(paste the Internal Database URL)*|
+| `NODE_ENV`     | `production`                       |
+
+> Setting `NODE_ENV=production` enables the SSL configuration required by Render's managed PostgreSQL.
+
+5. Click **Deploy**. The first deploy may take 1–2 minutes.
+
+### Step 3 — Verify
+
+Once deployed, test these URLs in your browser or Postman:
+
+```
+GET https://<your-app>.onrender.com/
+GET https://<your-app>.onrender.com/books
+GET https://<your-app>.onrender.com/books?limit=3
+GET https://<your-app>.onrender.com/books?order_by=price&order=desc
+GET https://<your-app>.onrender.com/books?search_q=clean
+```
 
 ---
 
-## Postman Collection Testing
+## Testing
 
-A complete 18-request Postman test collection is provided in [`Postman-Lab-3-Collection.json`](Postman-Lab-3-Collection.json).
+Tests use `pg-mem` (in-memory PostgreSQL) — no real database needed.
 
-### Requests Included
-1. `GET /books` — All 10 books (200 OK)
-2. `GET /books?search_q=orwell` — Search by author (200 OK)
-3. `GET /books?search_q=the` — Search by title substring (200 OK)
-4. `GET /books?order_by=price&order=desc` — Sort by price descending (200 OK)
-5. `GET /books?min_price=300&max_price=500` — Price range filter (200 OK)
-6. `GET /books?limit=3&offset=0` — Page 1 pagination (200 OK)
-7. `GET /books?limit=3&offset=3` — Page 2 pagination (200 OK)
-8. `GET /books?search_q=clean&order_by=price&order=asc&limit=5&offset=0` — Combined parameters (200 OK)
-9. `GET /books?order_by=invalid` — Invalid sort column (400 Bad Request)
-10. `GET /books?limit=abc` — Invalid pagination limit (400 Bad Request)
-11. `POST /books` — Create book & store dynamic `bookId` (201 Created)
-12. `POST /books` — Missing required title (400 Bad Request)
-13. `POST /books` — Invalid non-numeric price (400 Bad Request)
-14. `PUT /books/:id` — Update created book using `{{bookId}}` (200 OK)
-15. `PUT /books/99999` — Update non-existent ID (404 Not Found)
-16. `DELETE /books/:id` — Delete created book using `{{bookId}}` (200 OK)
-17. `DELETE /books/99999` — Delete non-existent ID (404 Not Found)
-18. `GET /unknown-route` — Unregistered route fallback (404 Not Found)
+```bash
+npm test
+```
+
+**Expected output:**
+```
+ℹ tests 54
+ℹ pass 54
+ℹ fail 0
+```
 
 ---
 
-## Viva Questions & Answers
+## Postman Testing
 
-1. **What is the difference between SQL `LIKE` and `ILIKE`?**
-   `LIKE` is case-sensitive, whereas `ILIKE` is PostgreSQL's extension for case-insensitive pattern matching.
+Import `Postman-Lab-3-Collection.json` into Postman:
 
-2. **Why should user query parameters like `limit` and `offset` be parameterized ($1, $2)?**
-   To prevent SQL injection attacks. Parameterization ensures that database drivers treat inputs strictly as values rather than executable SQL commands.
+1. Open Postman → Import → select `Postman-Lab-3-Collection.json`
+2. Set the base URL variable to `http://localhost:3002` (local) or your Render URL
+3. Run the collection
 
-3. **Why shouldn't `order_by` column names be directly passed as SQL parameters?**
-   SQL prepared statements do not allow column identifiers or table names as bind parameters ($1). Instead, column names must be validated against a strict server-side allowlist (`ALLOWED_ORDER_BY`) before being interpolated.
+---
 
-4. **What does `RETURNING *` do in PostgreSQL `INSERT` and `UPDATE` statements?**
-   It instructs PostgreSQL to return the inserted or updated row directly, avoiding the need for a secondary `SELECT` query to retrieve generated values like `id`.
+## Screenshots
 
-5. **How does Express handle unhandled errors?**
-   Express identifies error-handling middleware by its 4-argument signature: `(err, req, res, next)`. When any route calls `next(error)`, execution jumps straight to this handler.
+Screenshots of Postman test evidence are saved in `screenshots/` (01–18).
 
-6. **What is the purpose of `pg-mem` in testing?**
-   `pg-mem` is an in-memory emulator of PostgreSQL that runs entirely within Node.js, providing isolated, ultra-fast test execution without requiring network access or external PostgreSQL credentials.
+---
 
-7. **What is an idempotent operation in HTTP?**
-   An HTTP method is idempotent if making the request multiple times produces the same server state as making it once. `GET`, `PUT`, and `DELETE` are idempotent; `POST` is non-idempotent.
+## Remaining Tasks
 
-8. **What causes an `EADDRINUSE` error in Node.js?**
-   Attempting to bind a network server to an IP and port combination that is already bound by another running process.
-
-9. **What is the difference between `status(200)` and `status(201)`?**
-   `200 OK` denotes generic request success, while `201 Created` specifically indicates that a new resource was successfully generated as a result of the request.
-
-10. **Why should `app.listen()` be placed inside an `if (require.main === module)` check?**
-    It prevents the server from binding to a network port when imported by automated test files (e.g. Supertest), allowing tests to manage their own lifecycle.
+- [ ] Deploy to Render and update the deployment URL at the top of this file
+- [ ] Test all endpoints against the live Render URL
+- [ ] Submit via the Google Form for Lab 3
+- [ ] Submit lab report through ERP
