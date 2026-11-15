@@ -1,8 +1,8 @@
 # Lab 3 — Books REST API (Node.js + Express + PostgreSQL)
 
-> **Live Deployment URL:** *(to be updated after Render deployment)*
+> **Live Deployment URL:** https://lab3-books-api-65qj.onrender.com
 >
-> **GET /books live:** *(to be updated)*
+> **GET /books live:** https://lab3-books-api-65qj.onrender.com/books
 
 ---
 
@@ -288,11 +288,11 @@ npm start
 Once deployed, test these URLs in your browser or Postman:
 
 ```
-GET https://<your-app>.onrender.com/
-GET https://<your-app>.onrender.com/books
-GET https://<your-app>.onrender.com/books?limit=3
-GET https://<your-app>.onrender.com/books?order_by=price&order=desc
-GET https://<your-app>.onrender.com/books?search_q=clean
+GET https://lab3-books-api-65qj.onrender.com/
+GET https://lab3-books-api-65qj.onrender.com/books
+GET https://lab3-books-api-65qj.onrender.com/books?limit=3
+GET https://lab3-books-api-65qj.onrender.com/books?order_by=price&order=desc
+GET https://lab3-books-api-65qj.onrender.com/books?search_q=clean
 ```
 
 ---
@@ -333,6 +333,7 @@ Screenshots of Postman test evidence are saved in `screenshots/` (01–18).
 ## Remaining Tasks
 
 - [ ] Deploy to Render and update the deployment URL at the top of this file
-- [ ] Test all endpoints against the live Render URL
+- [x] Deployed to Render: https://lab3-books-api-65qj.onrender.com
+- [x] Tested all endpoints against the live Render URL
 - [ ] Submit via the Google Form for Lab 3
 - [ ] Submit lab report through ERP

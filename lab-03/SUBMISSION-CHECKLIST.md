@@ -43,7 +43,7 @@
 - [x] 10 seed books inserted when table is empty (idempotent)
 - [x] `DATABASE_URL` used as the connection string (never hardcoded)
 - [x] `.env` is in `.gitignore` — never committed
-- [ ] Render PostgreSQL database created and connected
+- [x] Render PostgreSQL database created and connected (`lab3-db`, Singapore, free)
 
 ## Documentation
 
@@ -63,18 +63,18 @@
 - [x] Lab 1 and Lab 2 not modified
 - [x] `node_modules/` not committed (in `.gitignore`)
 - [x] `.env` not committed (in `.gitignore`)
-- [ ] Final commit pushed to `origin main`
+- [x] Final commit pushed to `origin main` (commit `bd05fbe`)
 
 ## Deployment
 
-- [ ] Render Web Service created with root directory `lab-03`
-- [ ] `DATABASE_URL` environment variable set in Render
-- [ ] `NODE_ENV=production` set in Render
-- [ ] Deployment build succeeded
-- [ ] `GET /` returns 200 at the live URL
-- [ ] `GET /books` returns all seeded books at the live URL
-- [ ] All four endpoints tested at the live URL
-- [ ] `README.md` updated with the actual Render deployment URL
+- [x] Render Web Service created with root directory `lab-03`
+- [x] `DATABASE_URL` environment variable set in Render
+- [x] `NODE_ENV=production` set in Render
+- [x] Deployment build succeeded
+- [x] `GET /` returns 200 at https://lab3-books-api-65qj.onrender.com/
+- [x] `GET /books` returns all 10 seeded books at https://lab3-books-api-65qj.onrender.com/books
+- [x] All four endpoints tested at the live URL (/, /books, /books?limit=3, /books?order_by=price&order=desc, /books?search_q=clean)
+- [x] `README.md` updated with the actual Render deployment URL
 
 ## Submission
 
